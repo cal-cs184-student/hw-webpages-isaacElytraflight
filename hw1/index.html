@@ -10,6 +10,8 @@
 			.container {
 				margin: 0 auto;
 				padding: 60px 20%;
+				max-width: 100%;
+				overflow-wrap: break-word;
 			}
 
 			figure {
@@ -23,20 +25,30 @@
 			body {
 				font-family: 'Inter', sans-serif;
 			}
+
+			pre {
+				white-space: pre-wrap;
+				word-wrap: break-word;
+			}
+
+			code {
+				white-space: pre-wrap;
+				word-break: break-word;
+			}
 		</style>
 	</head>
 	<body>
 		<div class="container">
-		<h1>CS184/284A Spring 2025 Homework 1 Write-Up</h1>
-		<div style="text-align: center;">Names: </div>
+		<h1>CS184 Spring 2026 Homework 1 Write-Up</h1>
+		<div style="text-align: center;">Name: Isaac Jones</div>
 
 		<br>
 
-		Link to webpage: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
+		Link to webpage: <a href="https://cal-cs184-student.github.io/hw-webpages-isaacElytraflight/">https://cal-cs184-student.github.io/hw-webpages-isaacElytraflight/</a>
 		
 		<br>
 
-		Link to GitHub repository: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
+		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/hw1-rasterizer-elytraflight">https://github.com/cal-cs184-student/hw1-rasterizer-elytraflight</a>
 
 		<figure>
 			<img src="lion.jpg" alt="Lion" style="width:50%"/>
@@ -51,39 +63,118 @@
 		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
 
 		<h2>Task 1: Drawing Single-Color Triangles</h2>
+		<p>The first task in this assignment is to implement the function <code>rasterize_triangle</code> in <code>rasterizer.cpp</code>. </p>
+		<p>
+		Rasterizing a triangle, in principle is pretty simple: for each pixel in the bounding area, determine if it lies within the triangle.
+		If it does, set the pixel color to the triangle color. If not, leave it as is.
+		The way I chose to do this was to use the barycentric coordinate system.
+		This is much simpler to code than checking if the pixel is on the correct side of the three edges of the triangle, because it is agnostic of the winding order of the triangle's vertices.
+		The barycentric coordinates are like the weights of a weighted average of the triangle's vertices. They must add up to 1, because they are weights. Ultimately, each point in 2D space can be uniquely expressed this way, since there are three equations and three unknowns.
+		
+		The naive implementation follows:</p>
+		<pre><code>Matrix3x3 barycentric = Matrix3x3({ x0, x1, x2, y0, y1, y2, 1.0f, 1.0f, 1.0f });
+Matrix3x3 barycentric_inverse = barycentric.inv();
 
-		62500
-		31700
-		20000
-		98800
-		11400
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Vector3D minXY = barycentric_inverse.operator*(Vector3D(min_x+0.5, min_y+0.5, 1));
+Vector3D incX = barycentric_inverse.operator*(Vector3D(1, 0, 0));
+Vector3D incY = barycentric_inverse.operator*(Vector3D(0, 1, 0));</code></pre>
+		<p>The first 3x3 matrix is the barycentric coordinate matrix.
+		Taking the inverse allows it to be multiplied by a vector to get the barycentric coordinates.
+		If and only if the barycentric coordinates are all positive, this means the point is inside the triangle:</p>
+		<pre><code>for (int i = 0; i < dy; i++) {
+	temp2 = temp;
+	for (int j = 0; j < dx; j++) {
+		if (temp2[0] >= 0 && temp2[1] >= 0 && temp2[2] >= 0) {
+			fill_pixel(min_x + j, min_y + i, color);
+		}
+		temp2 += incX;
+	}
+	temp += incY;
+}</code></pre>
+		<p>The benefit of having temp, temp2, incX, and incY is that it saves on memory and computation, since we don't have to multiply by the inverse of the barycentric matrix for each pixel.
+		Instead, we can just add the increment vectors to the current point in the triangle.
 
-		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
+		It is, as the homework spec says, "no worse than one that checks each sample within the bounding box of the triangle," because this is exactly what it does.
+
+		Earlier on in the code, the minimum and maximum x and y coordinates of the triangle are calculated, which serves as the bounding box.</p>
+
+		<p>Here is the result of the implementation:</p>
+
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="lion.jpg" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="screenshot_2-8_1-15-52.png" width="400px"/>
+				  <figcaption>basic/test3.svg</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="lion.jpg" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="screenshot_2-8_1-16-17.png" width="400px"/>
+				  <figcaption>basic/test4.svg</figcaption>
 				</td>
 			  </tr>
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="lion.jpg" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="screenshot_2-8_1-16-39.png" width="400px"/>
+				  <figcaption>basic/test5.svg</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="lion.jpg" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="screenshot_2-8_1-17-9.png" width="400px"/>
+				  <figcaption>basic/test6.svg</figcaption>
 				</td>
 			  </tr>
 			</table>
 		</div>
+
+		<p>There are some interesting things to note about the results. First, I noticed that occasionally,
+			the triangles I drew in test4.svg had tips that protruded out of the black bounding box provided
+			by the test case software. This [a bit of an ego boost] was in fact not a bug with the rasterization code,
+			but rather with the test software itself. The top and bottom edges of the rectangular border, due to a
+			sign error, were being drawn 2 pixels too low and too high, respectively.
+
+			Changing the sign of the increment commands in <code>drawrend.cpp</code> at approximately lines 310-313
+			fixed the issue:</p>
+			<img src="staff_sign_error.png" width="400px"/>
+            <p>
+			The other thing to note is that, since this is a very basic rasterization algorithm,
+			there are lots of artifacts (i.e. jaggies) in the rendered images, especially in the
+			long, thin triangles in test4.svg. This will be fixed in the next task.</p>
+
+		<h3>Extra Credit: Speed Optimizations</h3>
+
+		<p>The first optimization I implemented was correct, but not very efficient.</p>
+		
+		<p>It checks each pixel in the entire bounding box, even if mathematically it is impossible for a pixel to be colored.
+		The main example of this is when we are going along a row, and we have already passed the end of the triangle, but we continue to check pixels in that row.
+		We can make a slight speedup by installing a check that I call "active": if the row has already drawn some pixels and then we pass the end of the triangle, we break out of the loop.</p>
+		<pre><code>for (int i = 0; i < dy; i++) {
+	active = false;
+	temp2 = temp;
+	for (int j = 0; j < dx; j++) {
+		if (temp2[0] >= 0 && temp2[1] >= 0 && temp2[2] >= 0) {
+			fill_pixel(min_x + j, min_y + i, color);
+			active = true;
+		}
+		else if (active) {
+			//if the column has already drawn some pixels, this means you have finished drawing all the necessary pixels for that row
+			break;
+		}
+		temp2 += incX;
+	}
+	temp += incY;
+}</code></pre>
+
+		<p>Additionally, there are some more optimizations built into the code. For instance, we use row-major ordering, instead of column-major ordering.
+			In other words, we iterate over the rows first, and then the columns within each row. This is much more efficient due to the way the frame buffer is stored in cache, since it is also row-major.
+			However, it is hard to test the relative performance of various speedup approaches, also because of caching within the computer.
+			Running the exact same code multiple times yields very different results, and the speedup is not always consistent. Sometimes, the speedup was negative, meaning the code was slower after the optimization!
+			My guess is that this is because the amount of cache misses is not consistent, and the code is not very cache-friendly.
+			Nonetheless, I think the speedup is still significant, and it is a good example of how to optimize code for performance.
+		</p>
+
+		<p>If I were to spend more time on this, I would invest more heavily in optimizing the code for the cache/CPU/memory. However,
+			this would make the rasterization code much more complex and hard to debug. Also I simply like barycentric coordinates.
+		</p>
+		</p>
 		
 		<h2>Task 2: Antialiasing by Supersampling</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
