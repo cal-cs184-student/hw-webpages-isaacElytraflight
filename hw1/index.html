@@ -85,26 +85,6 @@
 		This is much simpler to code than checking if the pixel is on the correct side of the three edges of the triangle, because it is agnostic of the winding order of the triangle's vertices.
 		The barycentric coordinates are like the weights of a weighted average of the triangle's vertices. They must add up to 1, because they are weights. Ultimately, each point in 2D space can be uniquely expressed this way, since there are three equations and three unknowns.
 		
-		The naive implementation follows:</p>
-		<pre><code>Matrix3x3 barycentric = Matrix3x3({ x0, x1, x2, y0, y1, y2, 1.0f, 1.0f, 1.0f });
-Matrix3x3 barycentric_inverse = barycentric.inv();
-
-Vector3D minXY = barycentric_inverse.operator*(Vector3D(min_x+0.5, min_y+0.5, 1));
-Vector3D incX = barycentric_inverse.operator*(Vector3D(1, 0, 0));
-Vector3D incY = barycentric_inverse.operator*(Vector3D(0, 1, 0));</code></pre>
-		<p>The first 3x3 matrix is the barycentric coordinate matrix.
-		Taking the inverse allows it to be multiplied by a vector to get the barycentric coordinates.
-		If and only if the barycentric coordinates are all positive, this means the point is inside the triangle:</p>
-		<pre><code>for (int i = 0; i < dy; i++) {
-	temp2 = temp;
-	for (int j = 0; j < dx; j++) {
-		if (temp2[0] >= 0 && temp2[1] >= 0 && temp2[2] >= 0) {
-			fill_pixel(min_x + j, min_y + i, color);
-		}
-		temp2 += incX;
-	}
-	temp += incY;
-}</code></pre>
 		<p>The benefit of having temp, temp2, incX, and incY is that it saves on memory and computation, since we don't have to multiply by the inverse of the barycentric matrix for each pixel.
 		Instead, we can just add the increment vectors to the current point in the triangle.
 
@@ -160,22 +140,6 @@ Vector3D incY = barycentric_inverse.operator*(Vector3D(0, 1, 0));</code></pre>
 		<p>It checks each pixel in the entire bounding box, even if mathematically it is impossible for a pixel to be colored.
 		The main example of this is when we are going along a row, and we have already passed the end of the triangle, but we continue to check pixels in that row.
 		We can make a slight speedup by installing a check that I call "active": if the row has already drawn some pixels and then we pass the end of the triangle, we break out of the loop.</p>
-		<pre><code>for (int i = 0; i < dy; i++) {
-	active = false;
-	temp2 = temp;
-	for (int j = 0; j < dx; j++) {
-		if (temp2[0] >= 0 && temp2[1] >= 0 && temp2[2] >= 0) {
-			fill_pixel(min_x + j, min_y + i, color);
-			active = true;
-		}
-		else if (active) {
-			//if the column has already drawn some pixels, this means you have finished drawing all the necessary pixels for that row
-			break;
-		}
-		temp2 += incX;
-	}
-	temp += incY;
-}</code></pre>
 
 		<p>Additionally, there are some more optimizations built into the code. For instance, we use row-major ordering, instead of column-major ordering.
 			In other words, we iterate over the rows first, and then the columns within each row. This is much more efficient due to the way the frame buffer is stored in cache, since it is also row-major.
@@ -193,37 +157,8 @@ Vector3D incY = barycentric_inverse.operator*(Vector3D(0, 1, 0));</code></pre>
 		<h2>Task 2: Antialiasing by Supersampling</h2>
 
         <p>The second task was to implement a basic supersampling algorithm. The instructions suggested saving an entire supersampled frame buffer and then scaling it down,
-			but I decided that this was unnecessarily complicated and memory intensive. Instead, I decided to make a helper function as follows:
+			but I decided that this was unnecessarily complicated and memory intensive. Instead, I decided to make a helper function to calculate alpha.
 		</p>
-
-		<pre><code>
-
-			float alpha_helper(Vector3D temp, Vector3D incX, Vector3D incY, int sample_rate) {
-				// x and y should be in barycentric coordinates already
-				float samples = sqrt(sample_rate);
-				float interval = (1.0f / (samples + 1.0f));
-				Vector3D incXFine = interval * incX;
-				Vector3D incYFine = interval * incY;
-			
-				Vector3D temp2;
-			
-				float alpha = 0;
-				float alpha_inc = (1.0f / sample_rate);
-			
-				for (int i = 0; i < samples; i++) {
-					temp += incYFine;
-					temp2 = temp;
-					for (int j = 0; j < samples; j++) {
-						temp2 += incXFine;
-						if (temp2[0] >= 0 && temp2[1] >= 0 && temp2[2] >= 0) {
-							alpha += alpha_inc;
-						}
-					}
-				}
-				return alpha;
-			}
-
-		</code></pre>
 
 		<p>The benefit of this helper is that it allows us to create an "alpha" value for new triangles that are drawn. <br>
 
@@ -238,16 +173,7 @@ Vector3D incY = barycentric_inverse.operator*(Vector3D(0, 1, 0));</code></pre>
 			The triangle detection code uses the incX and incY vectors that we already calculated, in barycentric coordinates, so I saved code.
 		</p>
 
-		<p>Then, I needed to update <code>fill_pixel</code> to use the alpha helper function. <code>fill_pixel</code> now looks like this:</p>
-
-		<pre><code>
-			void RasterizerImp::fill_pixel(size_t x, size_t y, Color c, float alpha) {
-			  
-				int location = y * width + x;
-				sample_buffer[location] = c*alpha + sample_buffer[location] * (1-alpha);
-			  
-			  }
-		</code></pre>
+		<p>Then, I needed to update <code>fill_pixel</code> to use the alpha helper function.</p>
 
 		<p>
 			The weighted average uses the new alpha value to blend the new color with the old color.
@@ -255,27 +181,7 @@ Vector3D incY = barycentric_inverse.operator*(Vector3D(0, 1, 0));</code></pre>
 			create the same jaggies as before.
 		</p>
 
-		<p>Finally, I update <code>rasterize_triangle</code> to use the alpha helper function. <code>rasterize_triangle</code> now looks like this:</p>
-
-		<pre><code>
-			for (int i = 0; i < dy; i++) {
-				active = false;
-				temp2 = temp;
-				for (int j = 0; j < dx; j++) {
-					alpha = alpha_helper(temp2, incX, incY, sample_rate);
-					if (alpha > 0) {
-						fill_pixel(min_x + j, min_y + i, color, alpha);
-						active = true;
-					}
-					else if (active) {
-						//if the column has already drawn some pixels, this means you have finished drawing all the necessary pixels for that row
-						break;
-					}
-					temp2 += incX;
-				}
-				temp += incY;
-			}
-		</code></pre>
+		<p>Finally, I update <code>rasterize_triangle</code> to use the alpha helper function.
 
 		<p>I also had to set the alpha value to 1 for points and lines, as the instructions said to not supersample them.</p>
 		<p>Here is the result of the implementation:</p>
@@ -309,27 +215,6 @@ Vector3D incY = barycentric_inverse.operator*(Vector3D(0, 1, 0));</code></pre>
 		<p>This should also theoretically improve the performance of the code, since we only bother to supersample if the 
 			single center point fails to be inside the triangle. So for the pixels that are deep inside the triangle, we don't bother supersampling.
 		</p>
-
-		<pre><code>
-			main_alpha = alpha_helper(temp2, incX, incY, 1.0);
-			if (main_alpha > 0) {
-				active = true;
-				fill_pixel(min_x + j, min_y + i, color, 1.0);
-			}
-			else {
-				//if it's not in the main pixel, try supersampling.
-				alpha = alpha_helper(temp2, incX, incY, sample_rate);
-				if (alpha > 0) {
-					fill_pixel(min_x + j, min_y + i, color, alpha);
-					active = true;
-				}
-				else if (active){
-					//if the column has already drawn some pixels, this means you have finished drawing all the necessary pixels for that row
-					break;
-				}
-
-			}
-		</code></pre>
 
 		<p>Here are the final results of the implementation:</p>
 
@@ -400,10 +285,8 @@ Vector3D incY = barycentric_inverse.operator*(Vector3D(0, 1, 0));</code></pre>
 		<p>Barycentric coordinates are useful, as demonstrated with my implementation in task 1, for determining if the point is inside the triangle.
 			If all three barycentric coordinates are positive, the point is inside the triangle. Otherwise, it is not.
 			This is also now useful for the case of determining a point's color, since we can now use the three barycentric coordinates to form a weighted
-			average of the three vertices' colors. This required exactly one new line of code in my implementation from before:
+			average of the three vertices' colors.
 		</p>
-
-		<pre><code>Color color = temp2[0] * c0 + temp2[1] * c1 + temp2[2] * c2;</code></pre>
 
 		<p>Since the code already uses barycentric coordinates, temp2 is exactly what we want to use for the weighted average.</p>
 
@@ -434,80 +317,6 @@ Vector3D incY = barycentric_inverse.operator*(Vector3D(0, 1, 0));</code></pre>
 			Barycentric coordinates, if a point is closer to one lattice point, it will be more heavily weighted than the others.
 			In my code, I chose to do this by lerping (linearly interpolating) in the x direction first, and then in the y direction.
 		</p>
-
-		<p>The code for this one was, again, pretty simple. I used this neat little trick to save on the cost of having an
-			"if" statement inside the heavy loop area:
-		</p>
-		
-		<pre><code>
-			Color (Texture::*sample_func)(Vector2D, int) = &Texture::sample_nearest;
-
-			if (psm == P_NEAREST) {
-				sample_func = &Texture::sample_nearest;
-			}
-
-			else if (psm == P_LINEAR) {
-				sample_func = &Texture::sample_bilinear;
-			}
-		</code></pre>
-
-		<p>Then, I used the following few lines inside the loop:</p>
-
-		<pre><code>
-			u = temp2[0] * u0 + temp2[1] * u1 + temp2[2] * u2;
-			v = temp2[0] * v0 + temp2[1] * v1 + temp2[2] * v2;
-			uv = Vector2D(u, v);
-			color = (tex.*sample_func)(uv, 0);
-		</code></pre>
-
-		<p>This part is very similar to Task 4, since it's just another weighted average using the barycentric coordinates. From there, I plugged it into tex.*sample_func:</p>
-
-		<pre><code>
-			Color Texture::sample_nearest(Vector2D uv, int level) {
-				// TODO: Task 5: Fill this in.
-				auto& mip = mipmap[level];
-			  
-				size_t x = round(uv.x*width);
-				size_t y = round(uv.y*height);
-				x = min(x, width-1);
-				y = min(y, height-1);
-			  
-				return mip.get_texel(x, y);
-			  }
-			  
-			  Color Texture::sample_bilinear(Vector2D uv, int level) {
-				// TODO: Task 5: Fill this in.
-				auto& mip = mipmap[level];
-			  
-				size_t x = floor(uv.x * width);
-				size_t y = floor(uv.y * height);
-				float alpha_x = uv.x * width - x;
-				float alpha_y = uv.y * height - y;
-				x = min(x, width - 2);
-				y = min(y, height - 2);
-			  
-				Color a = mip.get_texel(x, y);
-				Color b = mip.get_texel(x+1, y);
-				Color c = mip.get_texel(x, y+1);
-				Color d = mip.get_texel(x+1, y+1);
-			  
-				Color e = lerp(a, b, alpha_x);
-				Color f = lerp(c, d, alpha_x);
-			  
-				Color g = lerp(e, f, alpha_y);
-			  
-			  
-				return g;
-			}
-		</code></pre>
-
-		<p>I also made a helper function for the bilinear sampling, lerp:</p>
-
-		<pre><code>
-			static Color lerp(Color a, Color b, float alpha) {
-				return a * (1-alpha) + b * (alpha);
-			}
-		</code></pre>
 
 		<p>Here are the results of the implementation:</p>
 
@@ -575,8 +384,7 @@ Vector3D incY = barycentric_inverse.operator*(Vector3D(0, 1, 0));</code></pre>
 			for the mipmap level. Then there's also the linear interpolation approach, which uses a weighted average of the two nearest mipmap levels, similar to how we did for pixels.
 			The class notes mention that simultaneously using linear sampling for pixel sampling and level sampling is known as trilinear sampling.
 			<br>
-			This time I won't explicitly include the code because it's full of really hairy if statement chains, but in essence
-			the hardest part is finding what mipmap level to use.
+			In essence, the hardest part is finding what mipmap level to use.
 			We compute the Jacobian matrix of the transformation from the screen pixel to the texture pixel by seeing how a "nudge" in pixel X/Y affects the texture coordinates U/V.
 			This provides four values that describe the rates of change; we take the L2 norm and then take the max of both two-vectors to get the max; then we take the log base 2, which is our mipmap level.
 			We then have to decide whether to linearly interpolate or just use the nearest integer mipmap level.

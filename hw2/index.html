@@ -28,7 +28,7 @@
 	<body>
 		<div class="container">
 		<h1>CS184/284A Spring 2025 Homework 2 Write-Up</h1>
-		<div style="text-align: center;">Names: </div>
+		<div style="text-align: center;">Name: Isaac Jones</div>
 
 		<br>
 
@@ -36,11 +36,11 @@
 
 		<br>
 		
-		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/hw1-rasterizer-elytraflight">https://github.com/cal-cs184-student/hw1-rasterizer-elytraflight</a>
+		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/hw2-meshedit-isaac-jones">https://github.com/cal-cs184-student/hw2-meshedit-isaac-jones</a>
 
 		<figure>
-			<img src="teapot.png" alt="Teapot" style="width:50%"/>
-			<figcaption>You can add images with captions!</figcaption>
+			<img src="Thumbnail.png" alt="Upsampled cow" style="width:50%"/>
+			<figcaption>A Phong-shaded, upsampled cow.</figcaption>
 		</figure>
 
 		<!--
@@ -48,7 +48,20 @@
 		-->
 
 		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
+
+		<p>
+		This was a pretty cool homework! Picking up from HW 1, in which we learned how to draw and texture triangles, this homework covers how to handle curved surfaces and meshes in 3D.
+		The first part of the homework discusses Bezier curves, which is a way we can uniquely determine a curve based on control points. This curve is easily calculable and customizable,
+		and is useful for describing paths and shapes in 3D.
+		</p>
+
+		<p>The second part of the homework was a sort of "playground" working with triangle meshes in 3D. I started by implementing my own weighted average vertex normal function, which helped me understand how to navigate the half-edge and mesh data structure.</p>
+
+		<p>The next few tasks stepped up significantly in difficulty, and required me to think more carefully about the data structure and how to navigate it.
+			Edge flipping and edge splitting were two such methods I had to implement, and they are used for making edits to triangle meshes.
+
+			Finally, the last part of the homework was the loop subdivision algorithm, which is used for upsampling and smoothing out meshes. This took me quite a bit of time to work out. Getting the edge flipping to flip the right edges took some thought and effort, but eventually it worked out!
+		</p>
 
 		<h2>Section I: Bezier Curves and Surfaces</h2>
 
@@ -112,35 +125,248 @@
 		</div>
 
 		<h3>Part 2: Bezier surfaces with separable 1D de Casteljau</h3>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		
+		In this section, I implemented de Casteljau's algorithm for 3D surfaces, not just 1D or 2D splines. 
+		Thankfully, the code was almost an identical copy of the 1D case, with the only difference being the datatype vector3D instead of vector2D.
+
+		Then, to go from a vector of control points down to the final result, I just applied evaluateStep() recursively until I had a single point.
+
+		In order to apply this to a 3D Bezier surface, I followed the algorithm outlined in the instructions: First iterate over all the rows, and create a new
+		vector (which I called controlPoints1D) that contains the aggregated Bezier control point summarizing each row (using u as the lerp value).
+		Then I applied another de Casteljau iteration on the vector controlPoints1D, using v as the lerp value.
+		The final result is the point that is returned by the function, which is a 2D Bezier interpolation just as we wanted.
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="Part2_1.png" width="400px"/>
+				  <figcaption>Teapot from one angle using the Bezier surface functions</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="Part2_2.png" width="400px"/>
+					<figcaption>Teapot from another angle to show originality</figcaption>
+				  </td>
+			  </tr>
+			</table>
+		</div>
 
 		<h2>Section II: Triangle Meshes and Half-Edge Data Structure</h2>
 
 		<h3>Part 3: Area-weighted vertex normals</h3>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		
+		In this section, I implemented the area-weighted vertex normals function. This allows for more realistic shading, such as Phong shading (see below).
+
+		To calculate the area-weighted normal, I needed to use the half-edge data structure to do the following:
+		<li>Find all the faces connected to a given vertex</li>
+		<li>For each face, calculate the area of the face and the normal of the face</li>
+		<li>Sum up all the weighted normals to get the final normal for the vertex</li>
+		<li>Normalize the final normal</li>
+
+		It's also worth noting that I'm implicitly using a property of the cross product: that if you treat two edges of a triangle as vectors and cross product them, the resulting
+		vector is normal to the plane of the triangle, and its magnitude is twice the area of the triangle. This is what the staff solution does, but for some reason they only implement normal, not area, so I ignored the staff implementation.
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="Part3_1.png" width="400px"/>
+				  <figcaption>Teapot using default flat shading</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="Part3_2.png" width="400px"/>
+					<figcaption>Teapot using Phong shading</figcaption>
+				  </td>
+			  </tr>
+			</table>
+		</div>
 
 		<h3>Part 4: Edge flip</h3>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		In part 4, I implemented the edge flip function. This turned out to be much more challenging than I anticipated.
+		After some very careful deliberation, I arrived at the realization that, theoretically, the Face and the Edge datatypes wouldn't need to be changed at all.
+		All that would need to be changed is the Vertex-es and the Halfedge-es. This is because the Faces could still point to the same HalfEdges, just rotated.
+
+		All that I needed to do was have the vertices point to the correct (swapped) HalfEdges, and the HalfEdges point to the correct next HalfEdge and Face.
+
+		In fact, this worked! At least, mostly. One problem I noticed was that, exactly half the time,
+		edge flip would fail and one of the faces would disappear. I did a rigorous check of all the pointers
+		for each vertex and halfedge, and deduced that the only possible culprit was the Face itself.
+		This made little sense, since the Face would still point to the same HalfEdge.
+
+		<p>I then decided to take the path of least resistance, and adopt the "make it somebody else's problem" approach. And, by that,
+			I mean that I just added two extra lines to explicitly attach the Face to one of the other HalfEdges that wasn't being flipped.
+			A bit of a hacky solution, but it worked perfectly, since it doesn't matter which HalfEdge the Face points to.
+		</p>
+
+		<p>Finally, I could flip edges like a Michelin star chef flipping pancakes with Gordon Ramsay staring right at me.</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="Part3_1.png" width="400px"/>
+				  <figcaption>Original Teapot</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="Part4_1.png" width="400px"/>
+				  <figcaption>Oops</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="Part4_2.png" width="400px"/>
+					<figcaption>Fixed version</figcaption>
+				  </td>
+			  </tr>
+			</table>
+		</div>
 
 		<h3>Part 5: Edge split</h3>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
+		<p>In this section, I implemented the edge split function. Armed with my experience from edge flip, I was able to implement it relatively easily. The idea behind my implementation was to reuse the reference to the edge being split by reducing its size in half and moving it up, while creating three more edges, two new faces, and six new half-edges. The rest I could keep pretty much exactly the same.</p>
+		<p>I learned my lesson from last time, and decided to follow the staff instructions, assigning an explicit name to every single relevant reference.</p>
+		</p>
+
+		This way, I could easily reference the correct HalfEdges, vertices, and faces, and assign them to the new ones,
+		without having to do long-winded references like e0->halfedge()->next()->next()->twin()...
+
+		<p>I then assigned everything to the correct pointers as before, and voila!</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+				<tr>
+					<td style="text-align: center;">
+						<img src="Part5_1.png" width="400px"/>
+						<figcaption>Oops again</figcaption>
+					</td>
+				</tr>
+			</table>
+		</div>
+			
+			<p>Uhhh, almost. I realized immediately that I forgot to assign the new position to the "m" vertex that I created. So I had to add an extra line interpolation the position between b and c.</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+				<tr>
+					<td style="text-align: center;">
+						<img src="Part5_2.png" width="400px"/>
+						<figcaption>There we go!</figcaption>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<p>This image above has examples of just edge splitting (the X's), and also a wacky combination of
+			successive edge splits and flips (the weird pattern in the center voxel). The splitting algorith works
+			great, however, and can repetitvely subdivide the same edge over and over!
+		</p>
 		<h3>Part 6: Loop subdivision for mesh upsampling</h3>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+	
+		<p>In part 6, I implemented the loop subdivision algorithm for mesh upsampling. This turned out to be a horribly difficult process, and took me more time than the previous five tasks combined! Most of that time was spent debugging the edge flipping step of the algorithm.</p>
 
-		<h2>(Optional) Section III: Potential Extra Credit - Art Competition: Model something Creative</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>Just like the staff algorithm suggested, I followed the approach of first calculating the interpolated positions, then calling edge split and flip, and then finally assigning the new 3D locations to the points, once created.
+		</p>
 
-		<h2>Additional Notes (please remove)</h2>
-		<ul>
-			<li>You can also add code if you'd like as so: <code>code code code</code></li>
-			<li>If you'd like to add math equations, 
-				<ul>
-					<li>You can write inline equations like so: \( a^2 + b^2 = c^2 \)</li>
-					<li>You can write display equations like so: \[ a^2 + b^2 = c^2 \]</li>
-				</ul>
-			</li>
-		</ul>
+		<p>However, I wanted to get the "easy" part out of the way first, which was the edge split/flipping algorithm. In fact, this took me around 10 hours to debug...</p>
+
+		<p>The edge splitting step was super easy, but after splitting, I kept noticing that edge flipping resulted in the code getting stuck in infinite loops on the render step. Upon a few hours of deep investigation,
+			I discovered that the edge flip function was somehow resulting in invalid topologies where triangles became degenerate and sometimes entire edges become de-referenced. This caused the "normal" function to loop,
+			because sometimes halfedges would point to themselves as their next halfedge.
+		</p>
+
+		<p>I figured something must be wrong with my EdgeFlip code, so I went back and rewrote it from sctratch, diligently naming everything and double checking. I went about several creative ways of 
+			testing, such as including breakpoints, cout print statements, and testing the script on different topologies. Nothing fixed the problem.
+		</p>
+
+		<p>Finally, I took a look back at the instructions on the website. Suddenly, I realized the problem: I was flipping the wrong edges! The instructions mention to mark edges as "new" only if they subdivide existing faces, not if they are the resultant from a previous larger edge.</p>
+
+		<p>I then went back and rewrote the edge flip function to mark edges as "new" only if they subdivide existing faces, and suddenly the problem I had been stuck on for hours was fixed.</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="Part6_1.png" width="400px"/>
+				  <figcaption>Original Cube</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="Part6_2.png" width="400px"/>
+				  <figcaption>After Edge subdivision</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+					<img src="Part6_3.png" width="400px"/>
+					<figcaption>After Edge flip</figcaption>
+				  </td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+					<img src="Part6_4.png" width="400px"/>
+					<figcaption>Further upsampling</figcaption>
+				  </td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>Perfect! Now the topology of upsampling works, now to work out the geometry.</p>
+
+		<p>After having descended into hell with edge flipping, I was able to quickly implement the weighted averages for the vertices:</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="Part6_5.png" width="400px"/>
+				  <figcaption>After one upsample</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="Part6_6.png" width="400px"/>
+				  <figcaption>After several upsamples</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>Sharper corners tend to get rounded out more, but it maintains some of its "sharper" topology in the form of the pointy bits.</p>
+
+		<p>As the staff instructions mention, a funny side effect of applying the upsampling onto the cuble example is that it
+			becomes a funny asymmetrical blob with pointy bits sticking out. This is an artifact of the way the face triangle are oriented.
+		</p>
+
+		
+
+		<p>However, there is a way to fix this.When I preprocessed it by splitting the middle edges on each of the six faces, it yielded a perfectly symmetrical cube, which could then be upsampled symmetrically:</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="Part6_7.png" width="400px"/>
+				  <figcaption>Original cube (preprocessed)</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="Part6_8.png" width="400px"/>
+				  <figcaption>After one upsample</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="Part6_9.png" width="400px"/>
+				  <figcaption>After several upsamples</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>And, with that, we are done!</p>
+
 		</div>
 	</body>
 </html>
