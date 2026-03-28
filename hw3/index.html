@@ -27,17 +27,19 @@
 	</head>
 	<body>
 		<div class="container">
-		<h1>CS184/284A Spring 2025 Homework 3 Write-Up</h1>
-		<div style="text-align: center;">Names: </div>
+		<h1>CS184 Spring 2026 Homework 3 Write-Up</h1>
+		<div style="text-align: center;">Name: Isaac Jones</div>
 
 		<br>
 
-		Link to webpage: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
-		Link to GitHub repository: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
+		Link to webpage: <a href="https://cal-cs184-student.github.io/hw-webpages-isaacElytraflight/">https://cal-cs184-student.github.io/hw-webpages-isaacElytraflight/</a>
 		
+		<br>
+
+		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/hw2-meshedit-isaac-jones">https://github.com/cal-cs184-student/hw2-meshedit-isaac-jones</a>
 		<figure>
 			<img src="cornell.png" alt="Cornell Boxes with Bunnies" style="width:70%"/>
-			<figcaption>You can add images with captions!</figcaption>
+			<figcaption>TD put something here</figcaption>
 		</figure>
 
 		<!--
@@ -48,59 +50,517 @@
 		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
 
 		<h2>Part 1: Ray Generation and Scene Intersection</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>In part 1, we deal with the basic ray generation and scene intersection functions.
+		In ray tracing, we use rays to trace the path of light through the scene. It might be intuitive to think of the ray as going from the light to the camera, but in fact, we instead 
+		trace from the camera to the light. This is mainly because our focus is on one specific camera sensor location, rather than the light bouncing off areas we can't see.
+		</p>
+		<p>
+			I start by creating the function that generates the camera rays. It takes in a point on the sensor grid, normalized from 0 to 1, and then converts it to a ray in the camera space.
+			Then I use matrix transformations to convert that into world space, since I know the exact rotation and translation of the camera relative to the world.
+			Finally, we normalize the ray direction to have a length of 1, and return the ray.
+			</p>
+		<p>
+			I make heavy use of homogeneous coordinates to simplify the math, so I can package translation and rotation into a single 4x4 matrix.
 
-		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
+		</p>
+
+		<p>As instructed in Task 2, I implemented grid sampling, so within each pixel, a certain fixed number of rays are generated in slightly different directions
+			(known as jittering) so that we don't only sample the lattice points in the pixel grid, but also the space in between.
+		</p>
+
+		<p>Finally, I implemented the intersection algorithms for triangles and spheres.</p>
+
+		<p>Put simply, the intersection algorithms for triangles involve solving a linear system of equations, while intersections for spheres involve solving a quadratic system of equations.</p>
+
+		<p>To test the intersection of a triangle involves finding the intersection point of the ray with the plane of the triangle, and then seeing if the barycentric coordinates of that point lie within the triangle.
+			If they do, then the ray intersects the triangle. (We must also ensure that the intersection point is inside the bounds and is not clipped by the t min or t max.)
+			Insersecting a ray with a plane is linear because we have one unknown, t, and one equation: that the dot product of the normal to the plane, and a vector between the intersection point and any other point on the plane, is zero (perpendicular).
+			So, we can solve for t and then use that to find the intersection point.
+		</p>
+
+		<p>For spheres, it's a similar approach: we define the sphere as a set of points whose distance from the center is R. Then we replace the vector value of the ray in terms of t into the sphere definition,
+			resulting in a quadratic equation in t. We then solve for t and check if the intersection point is inside the bounds and is not clipped by the t min or t max.
+		</p>
+
+		<p>It's also important to mention that, for the triangle intersection algorithm, I used a speedup technique called the Moller Trumbore algorithm,
+			which does the same thing for triangle intersection, but with fewer calculations. It accomplishes this by repurposing some of the math for the triangle intersection algorithm to solve for the barycentric coordinates directly.
+			As a result, it's a bit faster than the naive approach.
+		</p>
+
+		<p>Here are the results of the implementation:</p>
+
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="1_1.png" width="400px"/>
+				  <figcaption>Cornell Box Empty</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
+					<img src="1_2.png" width="400px"/>
+					<figcaption>Cornell Box with Spheres</figcaption>
+				  </td>
 			  </tr>
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="1_3.png" width="400px"/>
+				  <figcaption>Cow</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+					<img src="1_4.png" width="400px"/>
+					<figcaption>Banana</figcaption>
+				  </td>
+			  </tr>
+			  <tr>
+				<td colspan="2" style="text-align: center;">
+				  <img src="1_5.png" width="400px"/>
+				  <figcaption>Building</figcaption>
 				</td>
 			  </tr>
 			</table>
 		</div>
 		
 		<h2>Part 2: Bounding Volume Hierarchy</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>It's clear that the rendering process needs some speedup. Rendering the cow takes 20 seconds on my computer.
+			So, I implemented a bounding volume hierarchy (BVH) to speed up the rendering process.
+		</p>
+		<p>I use a very simple recursive method for breaking up the primitives into smaller bounding boxes. Until each node
+			is a leaf (has fewer than max_leaf_size primitives), I split the primitives into the left and right children based on the
+			largest axis of the existing bounding box. For example, if the largest axis of the bounding box is the z axis, I sort the
+			primitives by their z coordinate, and then split the list into two halves. I then recurse on the left and right halves.
+		</p>
+
+		<p>In this manner, I choose the median of the axis to split on, so that the bounding boxes are as balanced as possible.</p>
+		<p>If I had chosen the mean instead of the median, outliers or concentrations of primitives would skew the split point, causing the bounding boxes to be imbalanced.</p>
+
+		<p>Below I discuss the results of the implementation.</p>
+
+		<p>CBLucy.dae, with hundreds of thousands of triangles, took 0.5192 seconds:</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<img src="2_1.png" width="400px"/>
+			<figcaption>CBLucy.dae</figcaption>
+		</div>
+
+		<p>CBdragon.dae, with almost exactly 100,000 triangles, took 0.1971 seconds:</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<img src="2_2.png" width="400px"/>
+			<figcaption>CBdragon.dae</figcaption>
+		</div>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="2_3.png" width="400px"/>
+				  <figcaption>beetle.dae</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="2_4.png" width="400px"/>
+					<figcaption>wall-e.dae</figcaption>
+				  </td>
+			  </tr>
+			</table>
+		</div>
+
+		<h3>Analysis (1 paragraph)</h3>
+
+		<p>cow.dae Used to take around 20 seconds with 8 threads, now it took 0.203 seconds. banana.dae Used to take around 50 seconds, now it took 0.1762 seconds. building.dae Used to take around 5 minutes, now it took 0.2265 seconds.</p>
+		<p>This is a significant (at least 10x) speedup for the larger models. It's clear that simplifying from O(n) to O(log n) is necessary for any sort of serious rendering.</p>
+		<p>Due to the nature of time complexity, we expect to see a greater speedup for the larger models, and a smaller speedup for the smaller models, which is exactly what we see.</p>
+		<p>However, there are plenty of further optimizations that can be made to speed up the rendering process. For instance, we can use a more sophisticated bounding volume hierarchy, such as a k-d tree or a quadtree.</p>
 
 		<h2>Part 3: Direct Illumination</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		
+		This part was quite the adventure and took me about 6 hours, so I am going to split it up into multiple sections.
+
+		<h3>Diffuse BSDF and Zero-Bounce illumination</h3>
+
+		<p>In this section, I implemented the diffuse BSDF helpers and zero-bounce illumination. The implementation was
+			very simple: Just fast forward the primitive's emission value:
+		</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<img src="3_1.png" width="400px"/>
+			<figcaption>Zero-bounce illumination</figcaption>
+		</div>
+
+		<h3>Direct Lighting with Hemisphere Sampling</h3>
+
+		<p>This part was quite long, because I struggled to get the Monte Carlo integration to work correctly.</p>
+		<p>The way it works is that we sample random points on the hemisphere (sticking out from the normal face of the object we've just collided with), and then projecting new rays in those directions.</p>
+		<p>We then sum up the radiance of the new secondary rays, weighted by the cosine of the angle between the secondary ray and the normal face of the object.</p>
+		<p>In true Monte Carlo fashion, we must also divide by the pdf of the sampled points, which turns out to be a flat 1/(2 pi) (since the surface area of the hemisphere is 2 pi).</p>
+		<p>We also have to make sure to multiply by the BSDF value for the diffuse material (which in this case is also just a constant anyway, as implemented in Tasks 1 and 2). </p>
+		<p>Then, finally, we set the rendering function to add the zero-bounce illumination and the single-bounce illumination:</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="3_2.png" width="400px"/>
+				  <figcaption>Bunny</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="3_3.png" width="400px"/>
+				  <figcaption>Another Bunny</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<h3>Direct Lighting with Importance Sampling</h3>
+
+		<p>Importance sampling direct lighting allowed me to borrow some code from the hemisphere sampliing implementation. Just like the hemisphere sampling implementation, I sampled random rays emanating from the surface of collision with the original ray, and performed a sum of the radiances weighted by the BSDF, the pdf, and the cosine of the angle between the surface normal and the secondary ray.</p>
+		<p>The only difference is the sampling strategy. Instead of uniformally sampling over the entire hemisphere, I sampled directly from the pdf that matches the shape of the lights in the scene.</p>
+		<p>Then, finally, I implemented the toggle between hemisphere sampling and importance sampling in the rendering function.</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<img src="3_10.png" width="400px"/>
+			<figcaption>Importance Sampling Direct Lighting...with a problem</figcaption>
+		</div>
+
+		<p>But there was an issue! The lights in the scene were not being sampled equitably! In order to increase efficiency (and match the staff solution), I had added a provision to sample point lights only once, since repeated samples would yield the exact same result.</p>
+		<p>But this meant that the area lights were being sampled 32 or 64 times, and the point lights were being practically ignored in the weighted sum. This explains why the rendering has no shadow behind the dragon, Only beneath the dragon.</p>
+
+		<p>To fix this, I added another weight to balance the final sum by the number of times each light was sampled:</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<img src="3_11.png" width="400px"/>
+			<figcaption>Importance Sampling Direct Lighting...almost better</figcaption>
+		</div>
+
+		<p>Okay, this was better, but now everything is too dark! This is because I was still counting the total number of samples and dividing by it, as I did with the hemisphere sampling implementation. This 
+			had the effect of duplicating the effect of the new weighting strategy I had implemented. So I simply deleted the old "divide by N" and kept the new one.
+		</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<img src="3_12.png" width="400px"/>
+			<figcaption>Tada!</figcaption>
+		</div>
+
+		<h3>Comparing Hemisphere Sampling to Importance Sampling</h3>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="3_4.png" width="400px"/>
+				  <figcaption>Bunny (Hemisphere Sampling)</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="3_7.png" width="400px"/>
+					<figcaption>Bunny (Importance Sampling)</figcaption>
+				  </td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="3_5.png" width="400px"/>
+				  <figcaption>Dragon (Hemisphere Sampling)</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="3_8.png" width="400px"/>
+					<figcaption>Dragon (Importance Sampling)</figcaption>
+				  </td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="3_6.png" width="400px"/>
+				  <figcaption>Coil (Hemisphere Sampling)</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="3_9.png" width="400px"/>
+					<figcaption>Coil (Importance Sampling)</figcaption>
+				  </td>
+			  </tr>
+			</table>
+		</div>
+
+		<h3>Analysis (1 paragraph)</h3>
+
+		<p>Now we can compare the two methods. We can see that the importance sampling method is both more efficient and less noisy than uniform hemisphere sampling. This is because the importance sampling method is able to focus more samples on the more important areas of the scene, such as the light sources.</p>
+		<p>As mentioned in the homework outline, the hemisphere sampling method will still converge to the correct answer, but it takes many, many more samples than the importance sampling method does.</p>
+		<p>This mirrors a common pattern we see in graphics optimization: by focusing more samples on the important areas of the scene, we can save compute and still get a good result. This is a similar idea behind the concept of mipmapping, as well as the adaptive sampling that will be implemented in Part 5.</p>
+		<p>The smoothness of all the importance sampling renders is noticeably better, even in such a small resolution as 480p.</p>
+		<p>It's also worth noting that some of the models (dragon and coil) are pitch black, which is because the code for non-diffuse BSDFs was not implemented and is outside the scope of the project.</p>
+
+		<h3>Comparing importance sampling with varying amounts of light samples</h3>
+
+		<p>We now return to the dragon model, and compare the importance sampling method with varying amounts of light samples. We can see that the more light samples we have, the smoother the rendering becomes.</p>
+		<p>It also shows that importance sampling is not immune to the problem of noise; with few numbers of light samples, everything suddenly becomes very grainy and looks terrible.</p>
+		<p>However, it is still better than hemisphere sampling, because 32 or 64 light samples and 4-16 pixel samples is enough to get a good result.</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="3_13.png" width="400px"/>
+				  <figcaption>1 sample per pixel, 64 light samples</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="3_14.png" width="400px"/>
+				  <figcaption>1 sample per pixel, 16 light samples</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="3_15.png" width="400px"/>
+				  <figcaption>1 sample per pixel, 4 light samples</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="3_16.png" width="400px"/>
+				  <figcaption>1 sample per pixel, 1 light sample</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
 
 		<h2>Part 4: Global Illumination</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		
+		<p>Now we finally get to global illumination. Since we already have local illumination, global illumination is very simple: At collision with a surface, recursively pick a new direction, create a new ray in that direction with depth d-1 (since we already bounced once), and sample the radiance along that ray.
+			I reused my one_bounce_radiance function to implement this, since each bounce needs to independently look at the light(s) and observe its radiance directly from the light(s).
+		</p>
+
+		<p>For Russian Roulette sampling, it was only one new lines of implementation: every time we bounce, we take a coin flip with chance p of just returning 0 radiance, and then the recursion tree returns back to the top with those values summed together.</p>
+
+		<p>I also found a clever way of implementing isAccumBounces: If isAccumBounces, add the recursive steps; if not, just set L_out to the next recursive step.</p>
+
+		<p>Here are the results of the implementation:</p>
+
+		<h3>Global Illumination Examples</h3>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_3_1.png" width="400px"/>
+				  <figcaption>wall-e</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="4_3_2.png" width="400px"/>
+					<figcaption>bench</figcaption>
+				  </td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_1_5.png" width="400px"/>
+				  <figcaption>CBbunny</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="4_3_3.png" width="400px"/>
+					<figcaption>CBspheres</figcaption>
+				  </td>
+			  </tr>
+			</table>
+		</div>
+
+		<h3>Comparing Direct Illumination to Indirect Illumination</h3>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_4_1.png" width="400px"/>
+				  <figcaption>ONLY direct illumination (bounces 0 and 1)</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="4_4_2.png" width="400px"/>
+					<figcaption>ONLY indirect illumination (bounces 2 thru 5)</figcaption>
+				  </td>
+			  </tr>
+			</table>
+		</div>
+
+		<h3>Comparing Individual Light Bounces</h3>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse; border: 1px solid #aaa;">
+				<tr>
+					<th style="border: 1px solid #aaa; padding: 6px;"></th>
+					<th style="border: 1px solid #aaa; padding: 6px;">Individual (isAccumBounces = false)</th>
+					<th style="border: 1px solid #aaa; padding: 6px;">Cumulative (isAccumBounces = true)</th>
+				</tr>
+				<tr>
+					<th style="border: 1px solid #aaa; padding: 6px;">Bounce 0</th>
+					<td style="text-align: center; border: 1px solid #aaa;">
+						<img src="4_2_0.png" width="400px"/>
+					</td>
+					<td style="text-align: center; border: 1px solid #aaa;">
+						<img src="4_1_0.png" width="400px"/>
+					</td>
+				</tr>
+				<tr>
+					<th style="border: 1px solid #aaa; padding: 6px;">Bounce 1</th>
+					<td style="text-align: center; border: 1px solid #aaa;">
+						<img src="4_2_1.png" width="400px"/>
+					</td>
+					<td style="text-align: center; border: 1px solid #aaa;">
+						<img src="4_1_1.png" width="400px"/>
+					</td>
+				</tr>
+				<tr>
+					<th style="border: 1px solid #aaa; padding: 6px;">Bounce 2</th>
+					<td style="text-align: center; border: 1px solid #aaa;">
+						<img src="4_2_2.png" width="400px"/>
+					</td>
+					<td style="text-align: center; border: 1px solid #aaa;">
+						<img src="4_1_2.png" width="400px"/>
+					</td>
+				</tr>
+				<tr>
+					<th style="border: 1px solid #aaa; padding: 6px;">Bounce 3</th>
+					<td style="text-align: center; border: 1px solid #aaa;">
+						<img src="4_2_3.png" width="400px"/>
+					</td>
+					<td style="text-align: center; border: 1px solid #aaa;">
+						<img src="4_1_3.png" width="400px"/>
+					</td>
+				</tr>
+				<tr>
+					<th style="border: 1px solid #aaa; padding: 6px;">Bounce 4</th>
+					<td style="text-align: center; border: 1px solid #aaa;">
+						<img src="4_2_4.png" width="400px"/>
+					</td>
+					<td style="text-align: center; border: 1px solid #aaa;">
+						<img src="4_1_4.png" width="400px"/>
+					</td>
+				</tr>
+				<tr>
+					<th style="border: 1px solid #aaa; padding: 6px;">Bounce 5</th>
+					<td style="text-align: center; border: 1px solid #aaa;">
+						<img src="4_2_5.png" width="400px"/>
+					</td>
+					<td style="text-align: center; border: 1px solid #aaa;">
+						<img src="4_1_5.png" width="400px"/>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<h3>Russian Roulette Sampling</h3>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_5_1.png" width="400px"/>
+				  <figcaption>max_ray_depth = 1</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_5_2.png" width="400px"/>
+				  <figcaption>max_ray_depth = 2</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_5_3.png" width="400px"/>
+				  <figcaption>max_ray_depth = 3</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_5_4.png" width="400px"/>
+				  <figcaption>max_ray_depth = 4</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_5_5.png" width="400px"/>
+				  <figcaption>max_ray_depth = 100</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>I find it very interesting how we are able to set the max_ray_depth to 100 and STILL finish significantly faster than the non-russian-roulette version did on only 5 bounces (5 minutes versus around 90 minutes). The only drawback is that it's a bit more noisy, but it's hardly noticeable.</p>
+
+
+		<h3>Comparing sample per pixel rates</h3>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_6_1.png" width="400px"/>
+				  <figcaption>1 sample per pixel</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_6_2.png" width="400px"/>
+				  <figcaption>2 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_6_3.png" width="400px"/>
+				  <figcaption>4 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_6_4.png" width="400px"/>
+				  <figcaption>8 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_6_5.png" width="400px"/>
+				  <figcaption>16 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_6_6.png" width="400px"/>
+				  <figcaption>64 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="4_6_7.png" width="400px"/>
+				  <figcaption>1024 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
 
 		<h2>Part 5: Adaptive Sampling</h2>
 		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
 		<h2>(Optional) Part 6: Extra Credit Opportunities</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+	
+		<p><h3>Extra Credit:</h3> Another way I tried speeding up the rendering process was to use PCA (principal component analysis) to split the primitives along the axis that maximizes the variance of the primitives.
+			This makes for slightly more processing power up front, but it allows for non-axis-aligned splits, which reduces the number of bounding boxes that need to be checked for intersection.
+		</p>
+
+		<p>Below is a comparison of the two splits for cow.dae:</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="2_5.png" width="400px"/>
+				  <figcaption>Axis-aligned splits</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="2_6.png" width="400px"/>
+					<figcaption>PCA splits</figcaption>
+				  </td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>Neither split is perfect, but the PCA split is slightly better. It's clear that the PCA split is able to rule out more primitives in the early stages of the recursion, which is a good thing.</p>
 		
-		<h2>Additional Notes (please remove)</h2>
-		<ul>
-			<li>You can also add code if you'd like as so: <code>code code code</code></li>
-			<li>If you'd like to add math equations, 
-				<ul>
-					<li>You can write inline equations like so: \( a^2 + b^2 = c^2 \)</li>
-					<li>You can write display equations like so: \[ a^2 + b^2 = c^2 \]</li>
-				</ul>
-			</li>
-		</ul>
 		</div>
 	</body>
 </html>
