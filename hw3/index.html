@@ -36,10 +36,10 @@
 		
 		<br>
 
-		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/hw2-meshedit-isaac-jones">https://github.com/cal-cs184-student/hw2-meshedit-isaac-jones</a>
+		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/hw3-pathtracer-isaacelytraflight">https://github.com/cal-cs184-student/hw2-meshedit-isaac-jones</a>
 		<figure>
-			<img src="cornell.png" alt="Cornell Boxes with Bunnies" style="width:70%"/>
-			<figcaption>TD put something here</figcaption>
+			<img src="2_6.png" alt="Cow triangle primitives sorted into BVH with PCA split" style="height:50%"/>
+			<figcaption>Cow triangle primitives sorted into BVH with PCA split</figcaption>
 		</figure>
 
 		<!--
@@ -47,7 +47,14 @@
 		-->
 
 		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
+		This homework was extremely interesting! It covers the whole pipeline of ray tracing, from the basics of setting up coordinate transformations and generating the rays to the math necessary to calculate the radiance at each pixel.
+		I also learned several ways to speed up the rendering process, such as creating BVH (bounding volume hierarchy) binary trees, importance sampling for lighting, Russian roulette sampling for global illumination, and adaptive sampling to reduce the number of samples per pixel.
+		All of these speedup techniques focused on reducing rendering time from several hours to several seconds, without sacrificing the quality of the image.
+		It serves as a preview for how modern ray tracing engines work, and how these speedups are implemented in practice, so that we can have video games with full ray tracing in real time.
+
+		I also learned about BSDFs (bidirectional scattering distribution functions), which are a way to model the scattering of light off of a surface.
+		I also designed the recursive method for tracing rays through the scene with multiple bounces, so we can accurately portray shadows and diffuse lighting.
+
 
 		<h2>Part 1: Ray Generation and Scene Intersection</h2>
 		<p>In part 1, we deal with the basic ray generation and scene intersection functions.
@@ -534,7 +541,51 @@
 		</div>
 
 		<h2>Part 5: Adaptive Sampling</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+		<p>Adaptive sampling uses probability techniques to vastly speed up the rendering process. It's like an upgrade of Russian Roulette ray sampling, but for a different part of the process. While Russian Roulette focuses on exponentially decreasing the number of rays that propogate to another bounce, adaptive sampling reduces the number of total ray samples per pixel.</p>
+
+		<p>I followed the instructions in the homework outline to track the sample standard deviation of the radiance at each pixel, and then use that to determine how many samples to take at each pixel. If the standard deviation is beneath the threshold, this signifies that the sample mean has converged sufficiently to the true mean (due to central limit theorem). Then we can stop sampling for that pixel.</p>
+
+		<p>As the homework mentions, I calculate a statistic "I", which signifies the size of the confidence interval for the true mean. If "I" is greater than the threshold, I sample again. If it's less, I stop sampling.</p>
+
+		<p>Here are the results of the implementation:</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="5_1_1.png" width="400px"/>
+				  <figcaption>CBbunny</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="5_1_2.png" width="400px"/>
+					<figcaption>Rate map for CBbunny</figcaption>
+				  </td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="5_2_1.png" width="400px"/>
+				  <figcaption>CBspheres</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="5_2_2.png" width="400px"/>
+					<figcaption>Rate map for CBspheres</figcaption>
+				  </td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="5_3_1.png" width="400px"/>
+				  <figcaption>wall-e</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="5_3_2.png" width="400px"/>
+					<figcaption>Rate map for wall-e</figcaption>
+				  </td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>And now we are done! The rendering time is much faster (around 4 minutes instead of 100 minutes), and it produces a much better result.</p>
 
 		<h2>(Optional) Part 6: Extra Credit Opportunities</h2>
 	
