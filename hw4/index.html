@@ -27,16 +27,16 @@
 	</head>
 	<body>
 		<div class="container">
-		<h1>CS184/284A Spring 2025 Homework 4 Write-Up</h1>
-		<div style="text-align: center;">Names: </div>
+		<h1>CS184 Spring 2026 Homework 4 Write-Up</h1>
+		<div style="text-align: center;">Name: Isaac Jones</div>
 
 		<br>
 
-		Link to webpage: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
+		Link to webpage: <a href="https://cal-cs184-student.github.io/hw-webpages-isaacElytraflight/">https://cal-cs184-student.github.io/hw-webpages-isaacElytraflight/</a>
 
 		<br>
 
-		Link to GitHub repository: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
+		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/hw4-clothsim-isaac-1">https://github.com/cal-cs184-student/hw4-clothsim-isaac-1</a>
 
 		<figure>
 			<img src="clothsim.png" alt="Cloth draped over sphere" style="width:70%"/>
@@ -51,29 +51,33 @@
 		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
 
 		<h2>Part 1: Masses and springs</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
-		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
+		<p>As we can see in the following images, the cloth is initially set up with masses and springs. It was a bit of a struggle to get the renderer to run at first due to antiquated dependencies, but eventually I got it working.</p>
+
+		<p>The shear springs are on the diagonals of the grid, and the structural springs are on the edges between lattice points. The bending springs are on the edges between lattice points of distance 2 away.</p>
+
+		<p>This makes physical sense, as the shear springs are responsible for the cloth "bunching up" when a shear force is applied, and the structural springs are responsible for the cloth "stretching" when a tension force is applied.</p>
+
+		<p>The bending springs are likely 2 apart so that the cloth can bend up and down, rather than just side to side.</p>
+		
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-				<td style="text-align: center;">
-				  <img src="clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="1_2.png" width="800px"/>
+				  <figcaption>(1) Cloth with no shearing constraints</figcaption>
 				</td>
 			  </tr>
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="1_3.png" width="800px"/>
+				  <figcaption>(2) Cloth with only shearing constraints</figcaption>
 				</td>
+			  </tr>
+			  <tr>
 				<td style="text-align: center;">
-				  <img src="clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="1_1.png" width="800px"/>
+				  <figcaption>(3) Final cloth with all springs (structural, shearing, and bending)</figcaption>
 				</td>
 			  </tr>
 			</table>
